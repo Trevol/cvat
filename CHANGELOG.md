@@ -6,25 +6,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- A converter to YOLO format
 - Installation guide
 - Linear interpolation for a single point
+- Video frame filter
+- Running functional tests for REST API during a build
+- Admins are no longer limited to a subset of python commands in the auto annotation application
+- Remote data source (list of URLs to create an annotation task)
+- Auto annotation using Faster R-CNN with Inception v2 (utils/open_model_zoo)
+- Auto annotation using Pixel Link mobilenet v2 - text detection (utils/open_model_zoo)
+- Ability to create a custom extractors for unsupported media types
+- Added in PDF extractor
+- Added in a command line model manager tester
+- Ability to dump/load annotations in several formats from UI (CVAT, Pascal VOC, YOLO, MS COCO, png mask, TFRecord)
+- Auth for REST API (api/v1/auth/): login, logout, register, ...
 
 ### Changed
 - Outside and keyframe buttons in the side panel for all interpolation shapes (they were only for boxes before)
+- Improved error messages on client side (#511)
 
 ### Deprecated
 -
 
 ### Removed
--
+- "Flip images" has been removed. UI now contains rotation features.
 
 ### Fixed
-- Fixed incorrect width of shapes borders in some cases
-- Fixed annotation parser for tracks with a start frame less than the first segment frame
-- Fixed interpolation on the server near outside frames
+- Incorrect width of shapes borders in some cases
+- Annotation parser for tracks with a start frame less than the first segment frame
+- Interpolation on the server near outside frames
+- Dump for case when task name has a slash
+- Auto annotation fail for multijob tasks
+- Installation of CVAT with OpenVINO on the Windows platform
+- Background color was always black in utils/mask/converter.py
+- Exception in attribute annotation mode when a label are switched to a value without any attributes
+- Handling of wrong labelamp json file in auto annotation (<https://github.com/opencv/cvat/issues/554>)
+- No default attributes in dumped annotation (<https://github.com/opencv/cvat/issues/601>)
+- Required field "Frame Filter" on admin page during a task modifying (#666)
+- Dump annotation errors for a task with several segments (#610, #500)
+- Invalid label parsing during a task creating (#628)
+- Button "Open Task" in the annotation view
+- Creating a video task with 0 overlap
 
 ### Security
 -
+
+## [0.4.2] - 2019-06-03
+### Fixed
+- Fixed interaction with the server share in the auto annotation plugin
 
 ## [0.4.1] - 2019-05-14
 ### Fixed
