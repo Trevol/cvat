@@ -4,7 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0.alpha] - 2020-02-XX
+### Added
+- Server only support for projects. Extend REST API v1 (/api/v1/projects*).
+- Ability to [get basic information about users without admin permissions](
+https://github.com/opencv/cvat/issues/750).
+- Changed REST API: removed PUT and added DELETE methods for /api/v1/users/ID.
+- Mask-RCNN Auto Annotation Script in OpenVINO format
+- Yolo Auto Annotation Script
+- Auto segmentation using Mask_RCNN component (Keras+Tensorflow Mask R-CNN Segmentation)
+- Added MOT CSV format support
+- Ability to dump/load annotations in LabelMe format from UI
+- REST API to export an annotation task (images + annotations)
+- Datumaro is an experimental framework to build, analyze, debug and visualize datasets for DL algorithms
+- Text Detection Auto Annoation Script in OpenVINO format for version 4
+- Added in OpenVINO Semantic Segmentation for roads
+- Ability to visualize labels when using Auto Annotation runner
+
+### Changed
+- page_size parameter for all REST API methods
+- React & Redux & Antd based dashboard
+- Yolov3 interpretation script fix and changes to mapping.json
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
+- [Mask problem on coco json style](https://github.com/opencv/cvat/issues/718)
+- [Exception in Git plugin](https://github.com/opencv/cvat/issues/826)
+
+### Security
+-
+
+## [0.5.1] - 2019-10-17
+### Added
+- Integration with Zenodo.org (DOI)
+
+## [0.5.0] - 2019-09-12
 ### Added
 - A converter to YOLO format
 - Installation guide
@@ -20,13 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added in a command line model manager tester
 - Ability to dump/load annotations in several formats from UI (CVAT, Pascal VOC, YOLO, MS COCO, png mask, TFRecord)
 - Auth for REST API (api/v1/auth/): login, logout, register, ...
+- Preview for the new CVAT UI (dashboard only) is available: http://localhost:9080/
+- Added command line tool for performing common task operations (/utils/cli/)
 
 ### Changed
 - Outside and keyframe buttons in the side panel for all interpolation shapes (they were only for boxes before)
-- Improved error messages on client side (#511)
-
-### Deprecated
--
+- Improved error messages on the client side (#511)
 
 ### Removed
 - "Flip images" has been removed. UI now contains rotation features.
@@ -49,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Creating a video task with 0 overlap
 
 ### Security
--
+- Upgraded Django, djangorestframework, and other packages
 
 ## [0.4.2] - 2019-06-03
 ### Fixed

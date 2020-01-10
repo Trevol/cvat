@@ -4,6 +4,9 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/840351da141e4eaeac6476fd19ec0a33)](https://app.codacy.com/app/cvat/cvat?utm_source=github.com&utm_medium=referral&utm_content=opencv/cvat&utm_campaign=Badge_Grade_Dashboard)
 [![Gitter chat](https://badges.gitter.im/opencv-cvat/gitter.png)](https://gitter.im/opencv-cvat)
 [![Coverage Status](https://coveralls.io/repos/github/opencv/cvat/badge.svg?branch=)](https://coveralls.io/github/opencv/cvat?branch=develop)
+[![Maintainability](https://api.codeclimate.com/v1/badges/0461727199dfe049b2f1/maintainability)](https://codeclimate.com/github/opencv/cvat/maintainability)
+[![codebeat badge](https://codebeat.co/badges/53cd0d16-fddc-46f8-903c-f43ed9abb6dd)](https://codebeat.co/projects/github-com-opencv-cvat-develop)
+[![DOI](https://zenodo.org/badge/139156354.svg)](https://zenodo.org/badge/latestdoi/139156354)
 
 CVAT is free, online, interactive video and image annotation tool for computer vision. It is being used by our team to annotate million of objects with different properties. Many UI and UX decisions are based on feedbacks from professional data annotation team.
 
@@ -14,6 +17,7 @@ CVAT is free, online, interactive video and image annotation tool for computer v
 - [Installation guide](cvat/apps/documentation/installation.md)
 - [User's guide](cvat/apps/documentation/user_guide.md)
 - [Django REST API documentation](#rest-api)
+- [Command line interface](utils/cli/)
 - [XML annotation format](cvat/apps/documentation/xml_format.md)
 - [AWS Deployment Guide](cvat/apps/documentation/AWS-Deployment-Guide.md)
 - [Questions](#questions)
@@ -40,7 +44,10 @@ Format selection is possible after clicking on the Upload annotation / Dump anno
 | [YOLO](https://pjreddie.com/darknet/yolo/)                                         | X      | X      |
 | [MS COCO Object Detection](http://cocodataset.org/#format-data)                    | X      | X      |
 | PNG mask                                                                           | X      |        |
+| PNG instance mask                                                                  | X      |        |
 | [TFrecord](https://www.tensorflow.org/tutorials/load_data/tf_records)              | X      | X      |
+| [MOT](https://motchallenge.net/)                                                   | X      | X      |
+| [LabelMe](http://labelme.csail.mit.edu/Release3.0)                                 | X      | X      |
 
 ## Links
 - [Intel AI blog: New Computer Vision Tool Accelerates Annotation of Digital Images and Video](https://www.intel.ai/introducing-cvat)
@@ -75,7 +82,11 @@ contributors and other users.
 
 However, if you have a feature request or a bug report that can reproduced,
 feel free to open an issue (with steps to reproduce the bug if it's a bug
-report).
+report) on [GitHub* issues](https://github.com/opencv/cvat/issues).
 
 If you are not sure or just want to browse other users common questions,
 [Gitter chat](https://gitter.im/opencv-cvat) is the way to go.
+
+Other ways to ask questions and get our support:
+* [\#cvat](https://stackoverflow.com/search?q=%23cvat) tag on StackOverflow*
+* [Forum on Intel Developer Zone](https://software.intel.com/en-us/forums/computer-vision)
