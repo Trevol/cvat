@@ -54,7 +54,7 @@ function TopBarComponent(props: VisibleTopBarProps & RouteComponentProps): JSX.E
                             (): void => history.push('/tasks/create')
                         }
                     >
-                         Create new task 4444
+                         Create new task
                     </Button>
                 </Col>
             </Row>
