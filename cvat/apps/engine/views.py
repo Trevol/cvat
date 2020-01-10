@@ -198,6 +198,8 @@ class ServerViewSet(viewsets.ViewSet):
                 if entry_type:
                     data.append({"name": entry.name, "type": entry_type})
 
+            data.sort(key=lambda d: (d['type'], d['name'])) # sorted with dir appearing first
+
             serializer = FileInfoSerializer(many=True, data=data)
             if serializer.is_valid(raise_exception=True):
                 return Response(serializer.data)
