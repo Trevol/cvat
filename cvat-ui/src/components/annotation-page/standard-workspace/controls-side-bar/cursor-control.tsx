@@ -1,46 +1,42 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Icon from 'antd/lib/icon';
+import Tooltip from 'antd/lib/tooltip';
 
-import {
-    Icon,
-    Tooltip,
-} from 'antd';
-
-import {
-    CursorIcon,
-} from 'icons';
-
-import {
-    ActiveControl,
-} from 'reducers/interfaces';
-
-import {
-    Canvas,
-} from 'cvat-canvas';
+import { CursorIcon } from 'icons';
+import { ActiveControl } from 'reducers/interfaces';
+import { Canvas } from 'cvat-canvas-wrapper';
 
 interface Props {
     canvasInstance: Canvas;
+    cursorShortkey: string;
     activeControl: ActiveControl;
 }
 
-export default function CursorControl(props: Props): JSX.Element {
+function CursorControl(props: Props): JSX.Element {
     const {
         canvasInstance,
         activeControl,
+        cursorShortkey,
     } = props;
 
     return (
-        <Tooltip overlay='Cursor' placement='right'>
+        <Tooltip title={`Cursor ${cursorShortkey}`} placement='right'>
             <Icon
                 component={CursorIcon}
                 className={activeControl === ActiveControl.CURSOR
-                    ? 'cvat-annotation-page-active-control' : ''
+                    ? 'cvat-active-canvas-control' : ''}
+                onClick={
+                    activeControl !== ActiveControl.CURSOR
+                        ? (): void => canvasInstance.cancel()
+                        : undefined
                 }
-                onClick={(): void => {
-                    if (activeControl !== ActiveControl.CURSOR) {
-                        canvasInstance.cancel();
-                    }
-                }}
             />
         </Tooltip>
     );
 }
+
+export default React.memo(CursorControl);

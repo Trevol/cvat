@@ -1,48 +1,54 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Tooltip from 'antd/lib/tooltip';
+import Icon from 'antd/lib/icon';
 
-import {
-    Tooltip,
-    Icon,
-} from 'antd';
-
-import {
-    GroupIcon,
-} from 'icons';
-
-import { Canvas } from 'cvat-canvas';
+import { GroupIcon } from 'icons';
+import { Canvas } from 'cvat-canvas-wrapper';
 import { ActiveControl } from 'reducers/interfaces';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
-
-    onGroupStart(): void;
+    switchGroupShortcut: string;
+    resetGroupShortcut: string;
+    groupObjects(enabled: boolean): void;
 }
 
-export default function GroupControl(props: Props): JSX.Element {
+function GroupControl(props: Props): JSX.Element {
     const {
+        switchGroupShortcut,
+        resetGroupShortcut,
         activeControl,
         canvasInstance,
-        onGroupStart,
+        groupObjects,
     } = props;
 
     const dynamicIconProps = activeControl === ActiveControl.GROUP
         ? {
-            className: 'cvat-annotation-page-active-control',
+            className: 'cvat-active-canvas-control',
             onClick: (): void => {
                 canvasInstance.group({ enabled: false });
+                groupObjects(false);
             },
         } : {
             onClick: (): void => {
                 canvasInstance.cancel();
                 canvasInstance.group({ enabled: true });
-                onGroupStart();
+                groupObjects(true);
             },
         };
 
+    const title = `Group shapes/tracks ${switchGroupShortcut}.`
+        + ` Select and press ${resetGroupShortcut} to reset a group`;
     return (
-        <Tooltip overlay='Group shapes/tracks' placement='right'>
+        <Tooltip title={title} placement='right'>
             <Icon {...dynamicIconProps} component={GroupIcon} />
         </Tooltip>
     );
 }
+
+export default React.memo(GroupControl);

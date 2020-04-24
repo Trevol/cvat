@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2019 Intel Corporation
+* Copyright (C) 2019-2020 Intel Corporation
 * SPDX-License-Identifier: MIT
 */
 
@@ -22,6 +22,7 @@
         Tag,
         objectStateFactory,
     } = require('./annotations-objects');
+    const AnnotationsFilter = require('./annotations-filter');
     const { checkObjectType } = require('./common');
     const Statistics = require('./statistics');
     const { Label } = require('./labels');
@@ -32,15 +33,12 @@
     } = require('./exceptions');
 
     const {
+        HistoryActions,
         ObjectShape,
         ObjectType,
+        colors,
     } = require('./enums');
     const ObjectState = require('./object-state');
-    const colors = [
-        '#FF355E', '#E936A7', '#FD5B78', '#FF007C', '#FF00CC', '#66FF66',
-        '#50BFE6', '#CCFF00', '#FFFF66', '#FF9966', '#FF6037', '#FFCC33',
-        '#AAF0D1', '#FF3855', '#FFF700', '#A7F432', '#FF5470', '#FAFA37',
-        '#FF7A00', '#FF9933', '#AFE313', '#00CC99', '#FF5050', '#733380'];
 
     function shapeFactory(shapeData, clientID, injection) {
         const { type } = shapeData;
@@ -113,39 +111,53 @@
                 return labelAccumulator;
             }, {});
 
+            this.annotationsFilter = new AnnotationsFilter();
+            this.history = data.history;
             this.shapes = {}; // key is a frame
             this.tags = {}; // key is a frame
             this.tracks = [];
             this.objects = {}; // key is a client id
             this.count = 0;
             this.flush = false;
-            this.collectionZ = {}; // key is a frame, {max, min} are values
             this.groups = {
                 max: 0,
             }; // it is an object to we can pass it as an argument by a reference
             this.injection = {
                 labels: this.labels,
-                collectionZ: this.collectionZ,
                 groups: this.groups,
                 frameMeta: this.frameMeta,
+                history: this.history,
+                groupColors: {},
             };
         }
 
         import(data) {
+            const result = {
+                tags: [],
+                shapes: [],
+                tracks: [],
+            };
+
             for (const tag of data.tags) {
                 const clientID = ++this.count;
-                const tagModel = new Tag(tag, clientID, this.injection);
+                const color = colors[clientID % colors.length];
+                const tagModel = new Tag(tag, clientID, color, this.injection);
                 this.tags[tagModel.frame] = this.tags[tagModel.frame] || [];
                 this.tags[tagModel.frame].push(tagModel);
                 this.objects[clientID] = tagModel;
+
+                result.tags.push(tagModel);
             }
 
             for (const shape of data.shapes) {
+                if (shape.type === 'cuboid') continue;
                 const clientID = ++this.count;
                 const shapeModel = shapeFactory(shape, clientID, this.injection);
                 this.shapes[shapeModel.frame] = this.shapes[shapeModel.frame] || [];
                 this.shapes[shapeModel.frame].push(shapeModel);
                 this.objects[clientID] = shapeModel;
+
+                result.shapes.push(shapeModel);
             }
 
             for (const track of data.tracks) {
@@ -156,10 +168,12 @@
                 if (trackModel) {
                     this.tracks.push(trackModel);
                     this.objects[clientID] = trackModel;
+
+                    result.tracks.push(trackModel);
                 }
             }
 
-            return this;
+            return result;
         }
 
         export() {
@@ -182,24 +196,45 @@
             return data;
         }
 
-        get(frame) {
+        get(frame, allTracks, filters) {
             const { tracks } = this;
             const shapes = this.shapes[frame] || [];
             const tags = this.tags[frame] || [];
 
-            const objects = tracks.concat(shapes).concat(tags).filter((object) => !object.removed);
-            // filtering here
+            const objects = [].concat(tracks, shapes, tags);
+            const visible = {
+                models: [],
+                data: [],
+            };
 
-            const objectStates = [];
             for (const object of objects) {
-                const stateData = object.get(frame);
-                if (stateData.outside && !stateData.keyframe) {
+                if (object.removed) {
                     continue;
                 }
 
-                const objectState = objectStateFactory.call(object, frame, stateData);
-                objectStates.push(objectState);
+                const stateData = object.get(frame);
+                if (!allTracks && stateData.outside && !stateData.keyframe) {
+                    continue;
+                }
+
+                visible.models.push(object);
+                visible.data.push(stateData);
             }
+
+            const [, query] = this.annotationsFilter.toJSONQuery(filters);
+            let filtered = [];
+            if (filters.length) {
+                filtered = this.annotationsFilter.filter(visible.data, query);
+            }
+
+            const objectStates = [];
+            visible.data.forEach((stateData, idx) => {
+                if (!filters.length || filtered.includes(stateData.clientID)) {
+                    const model = visible.models[idx];
+                    const objectState = objectStateFactory.call(model, frame, stateData);
+                    objectStates.push(objectState);
+                }
+            });
 
             return objectStates;
         }
@@ -283,7 +318,7 @@
 
                     // Push outside shape after each annotation shape
                     // Any not outside shape rewrites it
-                    if (!((object.frame + 1) in keyframes)) {
+                    if (!((object.frame + 1) in keyframes) && object.frame + 1 <= this.stopFrame) {
                         keyframes[object.frame + 1] = JSON
                             .parse(JSON.stringify(keyframes[object.frame]));
                         keyframes[object.frame + 1].outside = true;
@@ -381,10 +416,22 @@
             // Remove other shapes
             for (const object of objectsForMerge) {
                 object.removed = true;
-                if (typeof (object.resetCache) === 'function') {
-                    object.resetCache();
-                }
             }
+
+            this.history.do(HistoryActions.MERGED_OBJECTS, () => {
+                trackModel.removed = true;
+                for (const object of objectsForMerge) {
+                    object.removed = false;
+                }
+            }, () => {
+                trackModel.removed = false;
+                for (const object of objectsForMerge) {
+                    object.removed = true;
+                }
+            }, [
+                ...objectsForMerge
+                    .map((object) => object.clientID), trackModel.clientID,
+            ], objectStates[0].frame);
         }
 
         split(objectState, frame) {
@@ -418,7 +465,7 @@
                 points: [...objectState.points],
                 occluded: objectState.occluded,
                 outside: objectState.outside,
-                zOrder: 0,
+                zOrder: objectState.zOrder,
                 attributes: Object.keys(objectState.attributes)
                     .reduce((accumulator, attrID) => {
                         if (!labelAttributes[attrID].mutable) {
@@ -470,7 +517,16 @@
 
             // Remove source object
             object.removed = true;
-            object.resetCache();
+
+            this.history.do(HistoryActions.SPLITTED_TRACK, () => {
+                object.removed = false;
+                prevTrack.removed = true;
+                nextTrack.removed = true;
+            }, () => {
+                object.removed = true;
+                prevTrack.removed = false;
+                nextTrack.removed = false;
+            }, [object.clientID, prevTrack.clientID, nextTrack.clientID], frame);
         }
 
         group(objectStates, reset) {
@@ -488,12 +544,21 @@
             });
 
             const groupIdx = reset ? 0 : ++this.groups.max;
+            const undoGroups = objectsForGroup.map((object) => object.group);
             for (const object of objectsForGroup) {
                 object.group = groupIdx;
-                if (typeof (object.resetCache) === 'function') {
-                    object.resetCache();
-                }
             }
+            const redoGroups = objectsForGroup.map((object) => object.group);
+
+            this.history.do(HistoryActions.GROUPED_OBJECTS, () => {
+                objectsForGroup.forEach((object, idx) => {
+                    object.group = undoGroups[idx];
+                });
+            }, () => {
+                objectsForGroup.forEach((object, idx) => {
+                    object.group = redoGroups[idx];
+                });
+            }, objectsForGroup.map((object) => object.clientID), objectStates[0].frame);
 
             return groupIdx;
         }
@@ -540,6 +605,10 @@
             }
 
             for (const object of Object.values(this.objects)) {
+                if (object.removed) {
+                    continue;
+                }
+
                 let objectType = null;
                 if (object instanceof Shape) {
                     objectType = 'shape';
@@ -660,6 +729,7 @@
                 } else {
                     checkObjectType('state occluded', state.occluded, 'boolean', null);
                     checkObjectType('state points', state.points, null, Array);
+                    checkObjectType('state zOrder', state.zOrder, 'integer', null);
 
                     for (const coord of state.points) {
                         checkObjectType('point coordinate', coord, 'number', null);
@@ -681,7 +751,7 @@
                             occluded: state.occluded || false,
                             points: [...state.points],
                             type: state.shapeType,
-                            z_order: 0,
+                            z_order: state.zOrder,
                         });
                     } else if (state.objectType === 'track') {
                         constructed.tracks.push({
@@ -698,7 +768,7 @@
                                 outside: false,
                                 points: [...state.points],
                                 type: state.shapeType,
-                                z_order: 0,
+                                z_order: state.zOrder,
                             }],
                         });
                     } else {
@@ -711,7 +781,20 @@
             }
 
             // Add constructed objects to a collection
-            this.import(constructed);
+            const imported = this.import(constructed);
+            const importedArray = imported.tags
+                .concat(imported.tracks)
+                .concat(imported.shapes);
+
+            this.history.do(HistoryActions.CREATED_OBJECTS, () => {
+                importedArray.forEach((object) => {
+                    object.removed = true;
+                });
+            }, () => {
+                importedArray.forEach((object) => {
+                    object.removed = false;
+                });
+            }, importedArray.map((object) => object.clientID), objectStates[0].frame);
         }
 
         select(objectStates, x, y) {
@@ -723,7 +806,9 @@
             let minimumState = null;
             for (const state of objectStates) {
                 checkObjectType('object state', state, null, ObjectState);
-                if (state.outside) continue;
+                if (state.outside || state.hidden || state.objectType === ObjectType.TAG) {
+                    continue;
+                }
 
                 const object = this.objects[state.clientID];
                 if (typeof (object) === 'undefined') {
@@ -731,9 +816,9 @@
                         'The object has not been saved yet. Call annotations.put([state]) before',
                     );
                 }
-
                 const distance = object.constructor.distance(state.points, x, y);
-                if (distance !== null && (minimumDistance === null || distance < minimumDistance)) {
+                if (distance !== null && (minimumDistance === null
+                    || distance < minimumDistance)) {
                     minimumDistance = distance;
                     minimumState = state;
                 }
@@ -743,6 +828,111 @@
                 state: minimumState,
                 distance: minimumDistance,
             };
+        }
+
+        search(filters, frameFrom, frameTo) {
+            const [groups, query] = this.annotationsFilter.toJSONQuery(filters);
+            const sign = Math.sign(frameTo - frameFrom);
+
+            const flattenedQuery = groups.flat(Number.MAX_SAFE_INTEGER);
+            const containsDifficultProperties = flattenedQuery
+                .some((fragment) => fragment
+                    .match(/^width/) || fragment.match(/^height/));
+
+            const deepSearch = (deepSearchFrom, deepSearchTo) => {
+                // deepSearchFrom is expected to be a frame that doesn't satisfy a filter
+                // deepSearchTo is expected to be a frame that satifies a filter
+
+                let [prev, next] = [deepSearchFrom, deepSearchTo];
+                // half division method instead of linear search
+                while (!(Math.abs(prev - next) === 1)) {
+                    const middle = next + Math.floor((prev - next) / 2);
+                    const shapesData = this.tracks.map((track) => track.get(middle));
+                    const filtered = this.annotationsFilter.filter(shapesData, query);
+                    if (filtered.length) {
+                        next = middle;
+                    } else {
+                        prev = middle;
+                    }
+                }
+
+                return next;
+            };
+
+            const keyframesMemory = {};
+            const predicate = sign > 0
+                ? (frame) => frame <= frameTo
+                : (frame) => frame >= frameTo;
+            const update = sign > 0
+                ? (frame) => frame + 1
+                : (frame) => frame - 1;
+            for (let frame = frameFrom; predicate(frame); frame = update(frame)) {
+                // First prepare all data for the frame
+                // Consider all shapes, tags, and not outside tracks that have keyframe here
+                // In particular consider first and last frame as keyframes for all frames
+                const statesData = [].concat(
+                    (frame in this.shapes ? this.shapes[frame] : [])
+                        .filter((shape) => !shape.removed)
+                        .map((shape) => shape.get(frame)),
+                    (frame in this.tags ? this.tags[frame] : [])
+                        .filter((tag) => !tag.removed)
+                        .map((tag) => tag.get(frame)),
+                );
+                const tracks = Object.values(this.tracks)
+                    .filter((track) => (
+                        frame in track.shapes
+                        || frame === frameFrom
+                        || frame === frameTo
+                    )).filter((track) => !track.removed);
+                statesData.push(
+                    ...tracks.map((track) => track.get(frame))
+                        .filter((state) => !state.outside),
+                );
+
+                // Nothing to filtering, go to the next iteration
+                if (!statesData.length) {
+                    continue;
+                }
+
+                // Filtering
+                const filtered = this.annotationsFilter.filter(statesData, query);
+
+                // Now we are checking whether we need deep search or not
+                // Deep search is needed in some difficult cases
+                // For example when filter contains fields which
+                // can be changed between keyframes (like: height and width of a shape)
+                // It's expected, that a track doesn't satisfy a filter on the previous keyframe
+                // At the same time it sutisfies the filter on the next keyframe
+                let withDeepSearch = false;
+                if (containsDifficultProperties) {
+                    for (const track of tracks) {
+                        const trackIsSatisfy = filtered.includes(track.clientID);
+                        if (!trackIsSatisfy) {
+                            keyframesMemory[track.clientID] = [
+                                filtered.includes(track.clientID),
+                                frame,
+                            ];
+                        } else if (keyframesMemory[track.clientID]
+                            && keyframesMemory[track.clientID][0] === false) {
+                            withDeepSearch = true;
+                        }
+                    }
+                }
+
+                if (withDeepSearch) {
+                    const reducer = sign > 0 ? Math.min : Math.max;
+                    const deepSearchFrom = reducer(
+                        ...Object.values(keyframesMemory).map((value) => value[1]),
+                    );
+                    return deepSearch(deepSearchFrom, frame);
+                }
+
+                if (filtered.length) {
+                    return frame;
+                }
+            }
+
+            return null;
         }
     }
 

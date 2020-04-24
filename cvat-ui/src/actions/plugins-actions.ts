@@ -1,5 +1,8 @@
-import { AnyAction, Dispatch, ActionCreator } from 'redux';
-import { ThunkAction } from 'redux-thunk';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
+import { ActionUnion, createAction, ThunkAction } from 'utils/redux';
 import { SupportedPlugins } from 'reducers/interfaces';
 import PluginChecker from 'utils/plugin-checker';
 
@@ -8,49 +11,45 @@ export enum PluginsActionTypes {
     CHECKED_ALL_PLUGINS = 'CHECKED_ALL_PLUGINS'
 }
 
-interface PluginObjects {
-    [plugin: string]: boolean;
-}
+type PluginObjects = Record<SupportedPlugins, boolean>;
 
-function checkPlugins(): AnyAction {
-    const action = {
-        type: PluginsActionTypes.CHECK_PLUGINS,
-        payload: {},
-    };
+const pluginActions = {
+    checkPlugins: () => createAction(PluginsActionTypes.CHECK_PLUGINS),
+    checkedAllPlugins: (list: PluginObjects) => (
+        createAction(PluginsActionTypes.CHECKED_ALL_PLUGINS, {
+            list,
+        })
+    ),
+};
 
-    return action;
-}
+export type PluginActions = ActionUnion<typeof pluginActions>;
 
-function checkedAllPlugins(plugins: PluginObjects): AnyAction {
-    const action = {
-        type: PluginsActionTypes.CHECKED_ALL_PLUGINS,
-        payload: {
-            plugins,
-        },
-    };
+export function checkPluginsAsync(): ThunkAction {
+    return async (dispatch): Promise<void> => {
+        dispatch(pluginActions.checkPlugins());
+        const plugins: PluginObjects = {
+            ANALYTICS: false,
+            AUTO_ANNOTATION: false,
+            GIT_INTEGRATION: false,
+            TF_ANNOTATION: false,
+            TF_SEGMENTATION: false,
+            REID: false,
+            DEXTR_SEGMENTATION: false,
+        };
 
-    return action;
-}
-
-export function checkPluginsAsync():
-ThunkAction<Promise<void>, {}, {}, AnyAction> {
-    return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
-        dispatch(checkPlugins());
-        const plugins: PluginObjects = {};
-
-        const promises: Promise<boolean>[] = [];
-        const keys = Object.keys(SupportedPlugins);
-        for (const key of keys) {
-            const plugin = SupportedPlugins[key as any];
-            promises.push(PluginChecker.check(plugin as SupportedPlugins));
-        }
+        const promises: Promise<boolean>[] = [
+            PluginChecker.check(SupportedPlugins.ANALYTICS),
+            PluginChecker.check(SupportedPlugins.AUTO_ANNOTATION),
+            PluginChecker.check(SupportedPlugins.GIT_INTEGRATION),
+            PluginChecker.check(SupportedPlugins.TF_ANNOTATION),
+            PluginChecker.check(SupportedPlugins.TF_SEGMENTATION),
+            PluginChecker.check(SupportedPlugins.DEXTR_SEGMENTATION),
+            PluginChecker.check(SupportedPlugins.REID),
+        ];
 
         const values = await Promise.all(promises);
-        let i = 0;
-        for (const key of keys) {
-            plugins[key] = values[i++];
-        }
-
-        dispatch(checkedAllPlugins(plugins));
+        [plugins.ANALYTICS, plugins.AUTO_ANNOTATION, plugins.GIT_INTEGRATION, plugins.TF_ANNOTATION,
+            plugins.TF_SEGMENTATION, plugins.DEXTR_SEGMENTATION, plugins.REID] = values;
+        dispatch(pluginActions.checkedAllPlugins(plugins));
     };
 }

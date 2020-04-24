@@ -1,48 +1,50 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Tooltip from 'antd/lib/tooltip';
+import Icon from 'antd/lib/icon';
 
-import {
-    Tooltip,
-    Icon,
-} from 'antd';
-
-import {
-    MergeIcon,
-} from 'icons';
-
-import { Canvas } from 'cvat-canvas';
+import { MergeIcon } from 'icons';
+import { Canvas } from 'cvat-canvas-wrapper';
 import { ActiveControl } from 'reducers/interfaces';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
-
-    onMergeStart(): void;
+    switchMergeShortcut: string;
+    mergeObjects(enabled: boolean): void;
 }
 
-export default function MergeControl(props: Props): JSX.Element {
+function MergeControl(props: Props): JSX.Element {
     const {
+        switchMergeShortcut,
         activeControl,
         canvasInstance,
-        onMergeStart,
+        mergeObjects,
     } = props;
 
     const dynamicIconProps = activeControl === ActiveControl.MERGE
         ? {
-            className: 'cvat-annotation-page-active-control',
+            className: 'cvat-active-canvas-control',
             onClick: (): void => {
                 canvasInstance.merge({ enabled: false });
+                mergeObjects(false);
             },
         } : {
             onClick: (): void => {
                 canvasInstance.cancel();
                 canvasInstance.merge({ enabled: true });
-                onMergeStart();
+                mergeObjects(true);
             },
         };
 
     return (
-        <Tooltip overlay='Merge shapes/tracks' placement='right'>
+        <Tooltip title={`Merge shapes/tracks ${switchMergeShortcut}`} placement='right'>
             <Icon {...dynamicIconProps} component={MergeIcon} />
         </Tooltip>
     );
 }
+
+export default React.memo(MergeControl);

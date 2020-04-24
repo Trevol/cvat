@@ -1,7 +1,6 @@
-/*
-* Copyright (C) 2019 Intel Corporation
-* SPDX-License-Identifier: MIT
-*/
+// Copyright (C) 2019-2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
 import * as SVG from 'svg.js';
 import consts from './consts';
@@ -24,6 +23,21 @@ export interface BBox {
     height: number;
     x: number;
     y: number;
+}
+
+export interface DrawnState {
+    clientID: number;
+    outside?: boolean;
+    occluded?: boolean;
+    hidden?: boolean;
+    lock: boolean;
+    shapeType: string;
+    points?: number[];
+    attributes: Record<number, string>;
+    zOrder?: number;
+    pinned?: boolean;
+    updated: number;
+    frame: number;
 }
 
 // Translate point array from the canvas coordinate system
@@ -58,23 +72,13 @@ export function translateToSVG(svg: SVGSVGElement, points: number[]): number[] {
     return output;
 }
 
-// Translate point array from the first canvas coordinate system
-// to another
-export function translateBetweenSVG(
-    from: SVGSVGElement,
-    to: SVGSVGElement,
-    points: number[],
-): number[] {
-    return translateToSVG(to, translateFromSVG(from, points));
-}
-
 export function pointsToString(points: number[]): string {
     return points.reduce((acc, val, idx): string => {
         if (idx % 2) {
             return `${acc},${val}`;
         }
 
-        return `${acc} ${val}`;
+        return `${acc} ${val}`.trim();
     }, '');
 }
 

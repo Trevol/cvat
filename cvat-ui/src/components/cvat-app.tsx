@@ -1,19 +1,20 @@
-import 'antd/dist/antd.less';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
+import 'antd/dist/antd.css';
 import '../styles.scss';
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import {
-    Switch,
-    Route,
-    Redirect,
-} from 'react-router';
-import {
-    Spin,
-    Layout,
-    notification,
-} from 'antd';
+import { Switch, Route, Redirect } from 'react-router';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
+import { GlobalHotKeys, ExtendedKeyMapOptions, configure } from 'react-hotkeys';
+import Spin from 'antd/lib/spin';
+import Layout from 'antd/lib/layout';
+import notification from 'antd/lib/notification';
 
-import SettingsPageComponent from 'components/settings-page/settings-page';
+import GlobalErrorBoundary from 'components/global-error-boundary/global-error-boundary';
+import ShorcutsDialog from 'components/shortcuts-dialog/shortcuts-dialog';
+import SettingsPageContainer from 'containers/settings-page/settings-page';
 import TasksPageContainer from 'containers/tasks-page/tasks-page';
 import CreateTaskPageContainer from 'containers/create-task-page/create-task-page';
 import TaskPageContainer from 'containers/task-page/task-page';
@@ -24,9 +25,10 @@ import LoginPageContainer from 'containers/login-page/login-page';
 import RegisterPageContainer from 'containers/register-page/register-page';
 import HeaderContainer from 'containers/header/header';
 
+import getCore from 'cvat-core-wrapper';
 import { NotificationsState } from 'reducers/interfaces';
 
-type CVATAppProps = {
+interface CVATAppProps {
     loadFormats: () => void;
     loadUsers: () => void;
     loadAbout: () => void;
@@ -34,7 +36,10 @@ type CVATAppProps = {
     initPlugins: () => void;
     resetErrors: () => void;
     resetMessages: () => void;
+    switchShortcutsDialog: () => void;
+    keyMap: Record<string, ExtendedKeyMapOptions>;
     userInitialized: boolean;
+    userFetching: boolean;
     pluginsInitialized: boolean;
     pluginsFetching: boolean;
     formatsInitialized: boolean;
@@ -48,21 +53,33 @@ type CVATAppProps = {
     installedTFSegmentation: boolean;
     notifications: NotificationsState;
     user: any;
-};
+}
 
-export default class CVATApplication extends React.PureComponent<CVATAppProps> {
+class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentProps> {
     public componentDidMount(): void {
+        const core = getCore();
         const { verifyAuthorized } = this.props;
+        configure({ ignoreRepeatedEventsWhenKeyHeldDown: false });
+
+        // Logger configuration
+        const userActivityCallback: (() => void)[] = [];
+        window.addEventListener('click', () => {
+            userActivityCallback.forEach((handler) => handler());
+        });
+        core.logger.configure(() => window.document.hasFocus, userActivityCallback);
+
         verifyAuthorized();
     }
 
     public componentDidUpdate(): void {
         const {
+            verifyAuthorized,
             loadFormats,
             loadUsers,
             loadAbout,
             initPlugins,
             userInitialized,
+            userFetching,
             formatsInitialized,
             formatsFetching,
             usersInitialized,
@@ -77,8 +94,12 @@ export default class CVATApplication extends React.PureComponent<CVATAppProps> {
         this.showErrors();
         this.showMessages();
 
-        if (!userInitialized || user == null) {
-            // not authorized user
+        if (!userInitialized && !userFetching) {
+            verifyAuthorized();
+            return;
+        }
+
+        if (user == null) {
             return;
         }
 
@@ -119,15 +140,15 @@ export default class CVATApplication extends React.PureComponent<CVATAppProps> {
             resetMessages,
         } = this.props;
 
-        const { tasks } = notifications.messages;
-        const { models } = notifications.messages;
-        const shown = !!tasks.loadingDone || !!models.inferenceDone;
-
-        if (tasks.loadingDone) {
-            showMessage(tasks.loadingDone);
-        }
-        if (models.inferenceDone) {
-            showMessage(models.inferenceDone);
+        let shown = false;
+        for (const where of Object.keys(notifications.messages)) {
+            for (const what of Object.keys(notifications.messages[where])) {
+                const message = notifications.messages[where][what];
+                shown = shown || !!message;
+                if (message) {
+                    showMessage(message);
+                }
+            }
         }
 
         if (shown) {
@@ -159,97 +180,15 @@ export default class CVATApplication extends React.PureComponent<CVATAppProps> {
             resetErrors,
         } = this.props;
 
-        const { auth } = notifications.errors;
-        const { tasks } = notifications.errors;
-        const { formats } = notifications.errors;
-        const { users } = notifications.errors;
-        const { about } = notifications.errors;
-        const { share } = notifications.errors;
-        const { models } = notifications.errors;
-        const { annotation } = notifications.errors;
-
-        const shown = !!auth.authorized || !!auth.login || !!auth.logout || !!auth.register
-            || !!tasks.fetching || !!tasks.updating || !!tasks.dumping || !!tasks.loading
-            || !!tasks.exporting || !!tasks.deleting || !!tasks.creating || !!formats.fetching
-            || !!users.fetching || !!about.fetching || !!share.fetching || !!models.creating || !!models.starting
-            || !!models.fetching || !!models.deleting || !!models.inferenceStatusFetching
-            || !!models.metaFetching || !!annotation.frameFetching || !!annotation.saving
-            || !!annotation.jobFetching;
-
-        if (auth.authorized) {
-            showError(auth.authorized.message, auth.authorized.reason);
-        }
-        if (auth.login) {
-            showError(auth.login.message, auth.login.reason);
-        }
-        if (auth.register) {
-            showError(auth.register.message, auth.register.reason);
-        }
-        if (auth.logout) {
-            showError(auth.logout.message, auth.logout.reason);
-        }
-        if (tasks.fetching) {
-            showError(tasks.fetching.message, tasks.fetching.reason);
-        }
-        if (tasks.updating) {
-            showError(tasks.updating.message, tasks.updating.reason);
-        }
-        if (tasks.dumping) {
-            showError(tasks.dumping.message, tasks.dumping.reason);
-        }
-        if (tasks.loading) {
-            showError(tasks.loading.message, tasks.loading.reason);
-        }
-        if (tasks.exporting) {
-            showError(tasks.exporting.message, tasks.exporting.reason);
-        }
-        if (tasks.deleting) {
-            showError(tasks.deleting.message, tasks.deleting.reason);
-        }
-        if (tasks.creating) {
-            showError(tasks.creating.message, tasks.creating.reason);
-        }
-        if (formats.fetching) {
-            showError(formats.fetching.message, formats.fetching.reason);
-        }
-        if (users.fetching) {
-            showError(users.fetching.message, users.fetching.reason);
-        }
-        if (about.fetching) {
-            showError(about.fetching.message, about.fetching.reason);
-        }
-        if (share.fetching) {
-            showError(share.fetching.message, share.fetching.reason);
-        }
-        if (models.creating) {
-            showError(models.creating.message, models.creating.reason);
-        }
-        if (models.starting) {
-            showError(models.starting.message, models.starting.reason);
-        }
-        if (models.fetching) {
-            showError(models.fetching.message, models.fetching.reason);
-        }
-        if (models.deleting) {
-            showError(models.deleting.message, models.deleting.reason);
-        }
-        if (models.metaFetching) {
-            showError(models.metaFetching.message, models.metaFetching.reason);
-        }
-        if (models.inferenceStatusFetching) {
-            showError(
-                models.inferenceStatusFetching.message,
-                models.inferenceStatusFetching.reason,
-            );
-        }
-        if (annotation.jobFetching) {
-            showError(annotation.jobFetching.message, annotation.jobFetching.reason);
-        }
-        if (annotation.frameFetching) {
-            showError(annotation.frameFetching.message, annotation.frameFetching.reason);
-        }
-        if (annotation.saving) {
-            showError(annotation.saving.message, annotation.saving.reason);
+        let shown = false;
+        for (const where of Object.keys(notifications.errors)) {
+            for (const what of Object.keys(notifications.errors[where])) {
+                const error = notifications.errors[where][what];
+                shown = shown || !!error;
+                if (error) {
+                    showError(error.message, error.reason);
+                }
+            }
         }
 
         if (shown) {
@@ -268,51 +207,83 @@ export default class CVATApplication extends React.PureComponent<CVATAppProps> {
             installedAutoAnnotation,
             installedTFSegmentation,
             installedTFAnnotation,
+            switchShortcutsDialog,
             user,
+            history,
+            keyMap,
         } = this.props;
 
         const readyForRender = (userInitialized && user == null)
             || (userInitialized && formatsInitialized
-            && pluginsInitialized && usersInitialized && aboutInitialized);
+                && pluginsInitialized && usersInitialized && aboutInitialized);
 
         const withModels = installedAutoAnnotation
             || installedTFAnnotation || installedTFSegmentation;
 
+        const subKeyMap = {
+            SWITCH_SHORTCUTS: keyMap.SWITCH_SHORTCUTS,
+            OPEN_SETTINGS: keyMap.OPEN_SETTINGS,
+        };
+
+        const handlers = {
+            SWITCH_SHORTCUTS: (event: KeyboardEvent | undefined) => {
+                if (event) {
+                    event.preventDefault();
+                }
+
+                switchShortcutsDialog();
+            },
+            OPEN_SETTINGS: (event: KeyboardEvent | undefined) => {
+                if (event) {
+                    event.preventDefault();
+                }
+
+                if (history.location.pathname.endsWith('settings')) {
+                    history.goBack();
+                } else {
+                    history.push('/settings');
+                }
+            },
+        };
+
         if (readyForRender) {
             if (user) {
                 return (
-                    <BrowserRouter>
+                    <GlobalErrorBoundary>
                         <Layout>
                             <HeaderContainer> </HeaderContainer>
                             <Layout.Content>
-                                <Switch>
-                                    <Route exact path='/settings' component={SettingsPageComponent} />
-                                    <Route exact path='/tasks' component={TasksPageContainer} />
-                                    <Route exact path='/tasks/create' component={CreateTaskPageContainer} />
-                                    <Route exact path='/tasks/:id' component={TaskPageContainer} />
-                                    <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
-                                    { withModels
-                                        && <Route exact path='/models' component={ModelsPageContainer} /> }
-                                    { installedAutoAnnotation
-                                        && <Route exact path='/models/create' component={CreateModelPageContainer} /> }
-                                    <Redirect push to='/tasks' />
-                                </Switch>
+                                <ShorcutsDialog />
+                                <GlobalHotKeys keyMap={subKeyMap} handlers={handlers}>
+                                    <Switch>
+                                        <Route exact path='/settings' component={SettingsPageContainer} />
+                                        <Route exact path='/tasks' component={TasksPageContainer} />
+                                        <Route exact path='/tasks/create' component={CreateTaskPageContainer} />
+                                        <Route exact path='/tasks/:id' component={TaskPageContainer} />
+                                        <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
+                                        {withModels
+                                            && <Route exact path='/models' component={ModelsPageContainer} />}
+                                        {installedAutoAnnotation
+                                            && <Route exact path='/models/create' component={CreateModelPageContainer} />}
+                                        <Redirect push to='/tasks' />
+                                    </Switch>
+                                </GlobalHotKeys>
                                 {/* eslint-disable-next-line */}
-                                <a id='downloadAnchor' style={{ display: 'none' }} download/>
+                                <a id='downloadAnchor' style={{ display: 'none' }} download />
                             </Layout.Content>
                         </Layout>
-                    </BrowserRouter>
+                    </GlobalErrorBoundary>
                 );
             }
 
             return (
-                <BrowserRouter>
+                <GlobalErrorBoundary>
                     <Switch>
                         <Route exact path='/auth/register' component={RegisterPageContainer} />
                         <Route exact path='/auth/login' component={LoginPageContainer} />
                         <Redirect to='/auth/login' />
                     </Switch>
-                </BrowserRouter>
+                </GlobalErrorBoundary>
             );
         }
 
@@ -321,3 +292,5 @@ export default class CVATApplication extends React.PureComponent<CVATAppProps> {
         );
     }
 }
+
+export default withRouter(CVATApplication);

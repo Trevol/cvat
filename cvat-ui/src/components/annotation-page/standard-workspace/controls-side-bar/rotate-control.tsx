@@ -1,50 +1,45 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Icon from 'antd/lib/icon';
+import Tooltip from 'antd/lib/tooltip';
+import Popover from 'antd/lib/popover';
 
-import {
-    Icon,
-    Tooltip,
-    Popover,
-} from 'antd';
-
-import {
-    RotateIcon,
-} from 'icons';
-
-import {
-    Rotation,
-    Canvas,
-} from 'cvat-canvas';
+import { RotateIcon } from 'icons';
+import { Rotation } from 'reducers/interfaces';
 
 interface Props {
-    canvasInstance: Canvas;
-    rotateAll: boolean;
+    clockwiseShortcut: string;
+    anticlockwiseShortcut: string;
+    rotateFrame(rotation: Rotation): void;
 }
 
-export default function RotateControl(props: Props): JSX.Element {
+function RotateControl(props: Props): JSX.Element {
     const {
-        rotateAll,
-        canvasInstance,
+        anticlockwiseShortcut,
+        clockwiseShortcut,
+        rotateFrame,
     } = props;
 
     return (
         <Popover
-            overlayClassName='cvat-annotation-page-controls-rotate'
+            overlayClassName='cvat-rotate-canvas-controls'
             placement='right'
             content={(
                 <>
-                    <Tooltip overlay='Rotate the image anticlockwise' placement='topRight'>
+                    <Tooltip title={`Rotate the image anticlockwise ${anticlockwiseShortcut}`} placement='topRight'>
                         <Icon
-                            className='cvat-annotation-page-controls-rotate-left'
-                            onClick={(): void => canvasInstance
-                                .rotate(Rotation.ANTICLOCKWISE90, rotateAll)}
+                            className='cvat-rotate-canvas-controls-left'
+                            onClick={(): void => rotateFrame(Rotation.ANTICLOCKWISE90)}
                             component={RotateIcon}
                         />
                     </Tooltip>
-                    <Tooltip overlay='Rotate the image clockwise' placement='topRight'>
+                    <Tooltip title={`Rotate the image clockwise ${clockwiseShortcut}`} placement='topRight'>
                         <Icon
-                            className='cvat-annotation-page-controls-rotate-right'
-                            onClick={(): void => canvasInstance
-                                .rotate(Rotation.CLOCKWISE90, rotateAll)}
+                            className='cvat-rotate-canvas-controls-right'
+                            onClick={(): void => rotateFrame(Rotation.CLOCKWISE90)}
                             component={RotateIcon}
                         />
                     </Tooltip>
@@ -56,3 +51,5 @@ export default function RotateControl(props: Props): JSX.Element {
         </Popover>
     );
 }
+
+export default React.memo(RotateControl);

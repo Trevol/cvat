@@ -1,40 +1,29 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Icon from 'antd/lib/icon';
+import Tooltip from 'antd/lib/tooltip';
 
-import {
-    Icon,
-    Tooltip,
-} from 'antd';
-
-import {
-    MoveIcon,
-} from 'icons';
-
-import {
-    ActiveControl,
-} from 'reducers/interfaces';
-
-import {
-    Canvas,
-} from 'cvat-canvas';
+import { MoveIcon } from 'icons';
+import { ActiveControl } from 'reducers/interfaces';
+import { Canvas } from 'cvat-canvas-wrapper';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
 }
 
-export default function MoveControl(props: Props): JSX.Element {
-    const {
-        canvasInstance,
-        activeControl,
-    } = props;
+function MoveControl(props: Props): JSX.Element {
+    const { canvasInstance, activeControl } = props;
 
     return (
-        <Tooltip overlay='Move the image' placement='right'>
+        <Tooltip title='Move the image' placement='right'>
             <Icon
                 component={MoveIcon}
                 className={activeControl === ActiveControl.DRAG_CANVAS
-                    ? 'cvat-annotation-page-active-control' : ''
-                }
+                    ? 'cvat-active-canvas-control' : ''}
                 onClick={(): void => {
                     if (activeControl === ActiveControl.DRAG_CANVAS) {
                         canvasInstance.dragCanvas(false);
@@ -47,3 +36,5 @@ export default function MoveControl(props: Props): JSX.Element {
         </Tooltip>
     );
 }
+
+export default React.memo(MoveControl);

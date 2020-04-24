@@ -1,30 +1,28 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
+import Icon from 'antd/lib/icon';
+import Tooltip from 'antd/lib/tooltip';
 
-import {
-    Icon,
-    Tooltip,
-} from 'antd';
-
-import {
-    FitIcon,
-} from 'icons';
-
-import {
-    Canvas,
-} from 'cvat-canvas';
+import { FitIcon } from 'icons';
+import { Canvas } from 'cvat-canvas-wrapper';
 
 interface Props {
     canvasInstance: Canvas;
 }
 
-export default function FitControl(props: Props): JSX.Element {
+function FitControl(props: Props): JSX.Element {
     const {
         canvasInstance,
     } = props;
 
     return (
-        <Tooltip overlay='Fit the image' placement='right'>
+        <Tooltip title='Fit the image [Double Click]' placement='right'>
             <Icon component={FitIcon} onClick={(): void => canvasInstance.fit()} />
         </Tooltip>
     );
 }
+
+export default React.memo(FitControl);

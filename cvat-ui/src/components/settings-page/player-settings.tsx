@@ -1,27 +1,22 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 
-import {
-    Row,
-    Col,
-    Checkbox,
-    Slider,
-    Select,
-    InputNumber,
-    Icon,
-} from 'antd';
-
+import { Row, Col } from 'antd/lib/grid';
+import Checkbox, { CheckboxChangeEvent } from 'antd/lib/checkbox';
+import Button from 'antd/lib/button';
+import Slider from 'antd/lib/slider';
+import Select from 'antd/lib/select';
+import InputNumber from 'antd/lib/input-number';
+import Icon from 'antd/lib/icon';
 import Text from 'antd/lib/typography/Text';
-import { CheckboxChangeEvent } from 'antd/lib/checkbox';
 
-import {
-    PlaycontrolBackJumpIcon,
-    PlaycontrolForwardJumpIcon,
-} from 'icons';
+import { clamp } from 'utils/math';
+import { BackJumpIcon, ForwardJumpIcon } from 'icons';
+import { FrameSpeed, GridColor } from 'reducers/interfaces';
 
-import {
-    FrameSpeed,
-    GridColor,
-} from 'reducers/interfaces';
 
 interface Props {
     frameStep: number;
@@ -61,33 +56,63 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
         brightnessLevel,
         contrastLevel,
         saturationLevel,
+        onChangeFrameStep,
+        onChangeFrameSpeed,
+        onSwitchResetZoom,
         onSwitchRotateAll,
         onSwitchGrid,
         onChangeGridSize,
         onChangeGridColor,
         onChangeGridOpacity,
+        onChangeBrightnessLevel,
+        onChangeContrastLevel,
+        onChangeSaturationLevel,
     } = props;
+
+    const minFrameStep = 2;
+    const maxFrameStep = 1000;
+    const minGridSize = 5;
+    const maxGridSize = 1000;
+
 
     return (
         <div className='cvat-player-settings'>
             <Row type='flex' align='bottom' className='cvat-player-settings-step'>
                 <Col>
                     <Text className='cvat-text-color'> Player step </Text>
-                    <InputNumber min={2} max={1000} value={frameStep} />
+                    <InputNumber
+                        min={minFrameStep}
+                        max={maxFrameStep}
+                        value={frameStep}
+                        onChange={(value: number | undefined): void => {
+                            if (typeof (value) === 'number') {
+                                onChangeFrameStep(
+                                    Math.floor(
+                                        clamp(value, minFrameStep, maxFrameStep),
+                                    ),
+                                );
+                            }
+                        }}
+                    />
                 </Col>
                 <Col offset={1}>
                     <Text type='secondary'>
                         Number of frames skipped when selecting
-                        <Icon component={PlaycontrolBackJumpIcon} />
+                        <Icon component={BackJumpIcon} />
                         or
-                        <Icon component={PlaycontrolForwardJumpIcon} />
+                        <Icon component={ForwardJumpIcon} />
                     </Text>
                 </Col>
             </Row>
             <Row type='flex' align='middle' className='cvat-player-settings-speed'>
                 <Col>
                     <Text className='cvat-text-color'> Player speed </Text>
-                    <Select value={frameSpeed}>
+                    <Select
+                        value={frameSpeed}
+                        onChange={(speed: FrameSpeed): void => {
+                            onChangeFrameSpeed(speed);
+                        }}
+                    >
                         <Select.Option key='fastest' value={FrameSpeed.Fastest}>Fastest</Select.Option>
                         <Select.Option key='fast' value={FrameSpeed.Fast}>Fast</Select.Option>
                         <Select.Option key='usual' value={FrameSpeed.Usual}>Usual</Select.Option>
@@ -114,13 +139,15 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                 <Col span={8} className='cvat-player-settings-grid-size'>
                     <Text className='cvat-text-color'> Grid size </Text>
                     <InputNumber
-                        min={5}
-                        max={1000}
-                        step={1}
+                        min={minGridSize}
+                        max={maxGridSize}
                         value={gridSize}
+                        disabled={!grid}
                         onChange={(value: number | undefined): void => {
-                            if (value) {
-                                onChangeGridSize(value);
+                            if (typeof (value) === 'number') {
+                                onChangeGridSize(Math.floor(
+                                    clamp(value, minGridSize, maxGridSize),
+                                ));
                             }
                         }}
                     />
@@ -129,6 +156,7 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                     <Text className='cvat-text-color'> Grid color </Text>
                     <Select
                         value={gridColor}
+                        disabled={!grid}
                         onChange={(color: GridColor): void => {
                             onChangeGridColor(color);
                         }}
@@ -146,6 +174,7 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                         min={0}
                         max={100}
                         value={gridOpacity}
+                        disabled={!grid}
                         onChange={(value: number | [number, number]): void => {
                             onChangeGridOpacity(value as number);
                         }}
@@ -160,6 +189,9 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                             <Checkbox
                                 className='cvat-text-color'
                                 checked={resetZoom}
+                                onChange={(event: CheckboxChangeEvent): void => {
+                                    onSwitchResetZoom(event.target.checked);
+                                }}
                             >
                                 Reset zoom
                             </Checkbox>
@@ -193,7 +225,14 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                     Brightness
                 </Col>
                 <Col>
-                    <Slider min={0} max={100} value={brightnessLevel} />
+                    <Slider
+                        min={50}
+                        max={200}
+                        value={brightnessLevel}
+                        onChange={(value: number | [number, number]): void => {
+                            onChangeBrightnessLevel(value as number);
+                        }}
+                    />
                 </Col>
             </Row>
             <Row className='cvat-player-settings-contrast'>
@@ -201,7 +240,14 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                     Contrast
                 </Col>
                 <Col>
-                    <Slider min={0} max={100} value={contrastLevel} />
+                    <Slider
+                        min={50}
+                        max={200}
+                        value={contrastLevel}
+                        onChange={(value: number | [number, number]): void => {
+                            onChangeContrastLevel(value as number);
+                        }}
+                    />
                 </Col>
             </Row>
             <Row className='cvat-player-settings-saturation'>
@@ -209,7 +255,27 @@ export default function PlayerSettingsComponent(props: Props): JSX.Element {
                     Saturation
                 </Col>
                 <Col>
-                    <Slider min={0} max={100} value={saturationLevel} />
+                    <Slider
+                        min={0}
+                        max={300}
+                        value={saturationLevel}
+                        onChange={(value: number | [number, number]): void => {
+                            onChangeSaturationLevel(value as number);
+                        }}
+                    />
+                </Col>
+            </Row>
+            <Row className='cvat-player-reset-color-settings'>
+                <Col>
+                    <Button
+                        onClick={() => {
+                            onChangeBrightnessLevel(100);
+                            onChangeContrastLevel(100);
+                            onChangeSaturationLevel(100);
+                        }}
+                    >
+                        Reset color settings
+                    </Button>
                 </Col>
             </Row>
         </div>

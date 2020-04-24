@@ -1,79 +1,96 @@
-import React from 'react';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
+import { ExtendedKeyMapOptions } from 'react-hotkeys';
 import { connect } from 'react-redux';
 
-import { Canvas } from 'cvat-canvas';
-
+import { Canvas } from 'cvat-canvas-wrapper';
 import {
     mergeObjects,
     groupObjects,
     splitTrack,
+    rotateCurrentFrame,
+    repeatDrawShapeAsync,
+    pasteShapeAsync,
+    resetAnnotationsGroup,
 } from 'actions/annotation-actions';
 import ControlsSideBarComponent from 'components/annotation-page/standard-workspace/controls-side-bar/controls-side-bar';
-import {
-    ActiveControl,
-    CombinedState,
-    StringObject,
-} from 'reducers/interfaces';
+import { ActiveControl, CombinedState, Rotation } from 'reducers/interfaces';
 
 interface StateToProps {
     canvasInstance: Canvas;
     rotateAll: boolean;
     activeControl: ActiveControl;
-    labels: StringObject;
+    keyMap: Record<string, ExtendedKeyMapOptions>;
+    normalizedKeyMap: Record<string, string>;
 }
 
 interface DispatchToProps {
-    onMergeStart(): void;
-    onGroupStart(): void;
-    onSplitStart(): void;
+    mergeObjects(enabled: boolean): void;
+    groupObjects(enabled: boolean): void;
+    splitTrack(enabled: boolean): void;
+    rotateFrame(angle: Rotation): void;
+    resetGroup(): void;
+    repeatDrawShape(): void;
+    pasteShape(): void;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
     const {
-        annotation,
-        settings,
+        annotation: {
+            canvas: {
+                instance: canvasInstance,
+                activeControl,
+            },
+        },
+        settings: {
+            player: {
+                rotateAll,
+            },
+        },
+        shortcuts: {
+            keyMap,
+            normalizedKeyMap,
+        },
     } = state;
 
-    const {
-        canvasInstance,
-        activeControl,
-    } = annotation;
-
-    const labels = annotation.jobInstance.task.labels
-        .reduce((acc: StringObject, label: any): StringObject => {
-            acc[label.id as number] = label.name;
-            return acc;
-        }, {});
-
     return {
-        rotateAll: settings.player.rotateAll,
+        rotateAll,
         canvasInstance,
         activeControl,
-        labels,
+        normalizedKeyMap,
+        keyMap,
     };
 }
 
 function dispatchToProps(dispatch: any): DispatchToProps {
     return {
-        onMergeStart(): void {
-            dispatch(mergeObjects());
+        mergeObjects(enabled: boolean): void {
+            dispatch(mergeObjects(enabled));
         },
-        onGroupStart(): void {
-            dispatch(groupObjects());
+        groupObjects(enabled: boolean): void {
+            dispatch(groupObjects(enabled));
         },
-        onSplitStart(): void {
-            dispatch(splitTrack());
+        splitTrack(enabled: boolean): void {
+            dispatch(splitTrack(enabled));
+        },
+        rotateFrame(rotation: Rotation): void {
+            dispatch(rotateCurrentFrame(rotation));
+        },
+        repeatDrawShape(): void {
+            dispatch(repeatDrawShapeAsync());
+        },
+        pasteShape(): void {
+            dispatch(pasteShapeAsync());
+        },
+        resetGroup(): void {
+            dispatch(resetAnnotationsGroup());
         },
     };
-}
-
-function StandardWorkspaceContainer(props: StateToProps & DispatchToProps): JSX.Element {
-    return (
-        <ControlsSideBarComponent {...props} />
-    );
 }
 
 export default connect(
     mapStateToProps,
     dispatchToProps,
-)(StandardWorkspaceContainer);
+)(ControlsSideBarComponent);

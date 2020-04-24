@@ -1,3 +1,7 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 import { connect } from 'react-redux';
 
@@ -8,6 +12,7 @@ import { createTaskAsync } from 'actions/tasks-actions';
 
 interface StateToProps {
     status: string;
+    error: string;
     installedGit: boolean;
 }
 
@@ -25,7 +30,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
     const { creates } = state.tasks.activities;
     return {
         ...creates,
-        installedGit: state.plugins.plugins.GIT_INTEGRATION,
+        installedGit: state.plugins.list.GIT_INTEGRATION,
     };
 }
 

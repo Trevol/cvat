@@ -1,12 +1,11 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
-
-import {
-    Row,
-    Col,
-    Tag,
-    Select,
-} from 'antd';
-
+import { Row, Col } from 'antd/lib/grid';
+import Tag from 'antd/lib/tag';
+import Select from 'antd/lib/select';
 import Text from 'antd/lib/typography/Text';
 
 import { Model } from 'reducers/interfaces';

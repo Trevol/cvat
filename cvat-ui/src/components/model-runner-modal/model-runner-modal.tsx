@@ -1,18 +1,18 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import './styles.scss';
 import React from 'react';
-
-import {
-    Row,
-    Col,
-    Tag,
-    Spin,
-    Icon,
-    Modal,
-    Select,
-    Tooltip,
-    Checkbox,
-    notification,
-} from 'antd';
+import { Row, Col } from 'antd/lib/grid';
+import Icon from 'antd/lib/icon';
+import Select from 'antd/lib/select';
+import Checkbox from 'antd/lib/checkbox';
+import Tooltip from 'antd/lib/tooltip';
+import Modal from 'antd/lib/modal';
+import Tag from 'antd/lib/tag';
+import Spin from 'antd/lib/spin';
+import notification from 'antd/lib/notification';
 
 import {
     Model,
@@ -186,7 +186,7 @@ export default class ModelRunnerModalComponent extends React.PureComponent<Props
                     <Tag color={colors[modelLabel]}>{taskLabel}</Tag>
                 </Col>
                 <Col span={1} offset={1}>
-                    <Tooltip overlay='Remove the mapped values'>
+                    <Tooltip title='Remove the mapped values'>
                         <Icon
                             className='cvat-run-model-dialog-remove-mapping-icon'
                             type='close-circle'
@@ -288,8 +288,8 @@ export default class ModelRunnerModalComponent extends React.PureComponent<Props
                     )}
                 </Col>
                 <Col span={1} offset={1}>
-                    <Tooltip overlay='Specify a label mapping between model labels and task labels'>
-                        <Icon className='cvat-run-model-dialog-info-icon' type='question-circle' />
+                    <Tooltip title='Specify a label mapping between model labels and task labels'>
+                        <Icon className='cvat-info-circle-icon' type='question-circle' />
                     </Tooltip>
                 </Col>
             </Row>
@@ -335,8 +335,7 @@ export default class ModelRunnerModalComponent extends React.PureComponent<Props
                 { withMapping && tags}
                 { withMapping
                     && mappingISAvailable
-                    && this.renderMappingInput(availableModelLabels, taskLabels)
-                }
+                    && this.renderMappingInput(availableModelLabels, taskLabels)}
                 { withMapping
                     && (
                         <div>
@@ -349,8 +348,7 @@ export default class ModelRunnerModalComponent extends React.PureComponent<Props
                                 Clean old annotations
                             </Checkbox>
                         </div>
-                    )
-                }
+                    )}
             </div>
         );
     }

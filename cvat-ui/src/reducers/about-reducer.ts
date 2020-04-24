@@ -1,16 +1,30 @@
-import { AnyAction } from 'redux';
-import { AboutState } from './interfaces';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
-import { AuthActionTypes } from '../actions/auth-actions';
-import { AboutActionTypes } from '../actions/about-actions';
+import getCore from 'cvat-core-wrapper';
+import { CanvasVersion } from 'cvat-canvas-wrapper';
+import { boundariesActions, BoundariesActionTypes } from 'actions/boundaries-actions';
+import { AboutActions, AboutActionTypes } from 'actions/about-actions';
+import { AuthActions, AuthActionTypes } from 'actions/auth-actions';
+import { AboutState } from './interfaces';
+import pjson from '../../package.json';
 
 const defaultState: AboutState = {
-    about: {},
+    server: {},
+    packageVersion: {
+        core: getCore().client.version,
+        canvas: CanvasVersion,
+        ui: pjson.version,
+    },
     fetching: false,
     initialized: false,
 };
 
-export default function (state: AboutState = defaultState, action: AnyAction): AboutState {
+export default function (
+    state: AboutState = defaultState,
+    action: AboutActions | AuthActions | boundariesActions,
+): AboutState {
     switch (action.type) {
         case AboutActionTypes.GET_ABOUT: {
             return {
@@ -24,7 +38,7 @@ export default function (state: AboutState = defaultState, action: AnyAction): A
                 ...state,
                 fetching: false,
                 initialized: true,
-                about: action.payload.about,
+                server: action.payload.server,
             };
         case AboutActionTypes.GET_ABOUT_FAILED:
             return {
@@ -32,14 +46,13 @@ export default function (state: AboutState = defaultState, action: AnyAction): A
                 fetching: false,
                 initialized: true,
             };
-        case AuthActionTypes.LOGOUT_SUCCESS: {
+        case AuthActionTypes.LOGOUT_SUCCESS:
+        case BoundariesActionTypes.RESET_AFTER_ERROR: {
             return {
                 ...defaultState,
             };
         }
         default:
-            return {
-                ...state,
-            };
+            return state;
     }
 }

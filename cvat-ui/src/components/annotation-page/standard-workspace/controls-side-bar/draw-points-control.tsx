@@ -1,43 +1,37 @@
-import React from 'react';
-import {
-    Popover,
-    Icon,
-} from 'antd';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
-import { Canvas } from 'cvat-canvas';
+import React from 'react';
+import Popover from 'antd/lib/popover';
+import Icon from 'antd/lib/icon';
+
+import { Canvas } from 'cvat-canvas-wrapper';
 import { PointIcon } from 'icons';
-import {
-    ShapeType,
-    ActiveControl,
-} from 'reducers/interfaces';
+import { ShapeType } from 'reducers/interfaces';
 
 import DrawShapePopoverContainer from 'containers/annotation-page/standard-workspace/controls-side-bar/draw-shape-popover';
 
 interface Props {
     canvasInstance: Canvas;
-    activeControl: ActiveControl;
+    isDrawing: boolean;
 }
 
-export default function DrawRectangleControl(props: Props): JSX.Element {
-    const {
-        canvasInstance,
-        activeControl,
-    } = props;
+function DrawPointsControl(props: Props): JSX.Element {
+    const { canvasInstance, isDrawing } = props;
 
-    const dynamcPopoverPros = activeControl === ActiveControl.DRAW_POINTS
-        ? {
-            overlayStyle: {
-                display: 'none',
-            },
-        } : {};
+    const dynamcPopoverPros = isDrawing ? {
+        overlayStyle: {
+            display: 'none',
+        },
+    } : {};
 
-    const dynamicIconProps = activeControl === ActiveControl.DRAW_POINTS
-        ? {
-            className: 'cvat-annotation-page-active-control',
-            onClick: (): void => {
-                canvasInstance.draw({ enabled: false });
-            },
-        } : {};
+    const dynamicIconProps = isDrawing ? {
+        className: 'cvat-active-canvas-control',
+        onClick: (): void => {
+            canvasInstance.draw({ enabled: false });
+        },
+    } : {};
 
     return (
         <Popover
@@ -55,3 +49,5 @@ export default function DrawRectangleControl(props: Props): JSX.Element {
         </Popover>
     );
 }
+
+export default React.memo(DrawPointsControl);

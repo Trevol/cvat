@@ -1,9 +1,20 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 import { connect } from 'react-redux';
 
 import {
-    CombinedState,
-} from 'reducers/interfaces';
+    switchAutoSave,
+    changeAutoSaveInterval,
+    changeAAMZoomMargin,
+    switchShowingInterpolatedTracks,
+    switchShowingObjectsTextAlways,
+    switchAutomaticBordering,
+} from 'actions/settings-actions';
+
+import { CombinedState } from 'reducers/interfaces';
 
 import WorkspaceSettingsComponent from 'components/settings-page/workspace-settings';
 
@@ -12,6 +23,8 @@ interface StateToProps {
     autoSaveInterval: number;
     aamZoomMargin: number;
     showAllInterpolationTracks: boolean;
+    showObjectsTextAlways: boolean;
+    automaticBordering: boolean;
 }
 
 interface DispatchToProps {
@@ -19,6 +32,8 @@ interface DispatchToProps {
     onChangeAutoSaveInterval(interval: number): void;
     onChangeAAMZoomMargin(margin: number): void;
     onSwitchShowingInterpolatedTracks(enabled: boolean): void;
+    onSwitchShowingObjectsTextAlways(enabled: boolean): void;
+    onSwitchAutomaticBordering(enabled: boolean): void;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -28,6 +43,8 @@ function mapStateToProps(state: CombinedState): StateToProps {
         autoSaveInterval,
         aamZoomMargin,
         showAllInterpolationTracks,
+        showObjectsTextAlways,
+        automaticBordering,
     } = workspace;
 
     return {
@@ -35,30 +52,30 @@ function mapStateToProps(state: CombinedState): StateToProps {
         autoSaveInterval,
         aamZoomMargin,
         showAllInterpolationTracks,
+        showObjectsTextAlways,
+        automaticBordering,
     };
 }
 
-function mapDispatchToProps(): DispatchToProps {
+function mapDispatchToProps(dispatch: any): DispatchToProps {
     return {
-        // will be implemented
-        // eslint-disable-next-line
         onSwitchAutoSave(enabled: boolean): void {
-
+            dispatch(switchAutoSave(enabled));
         },
-        // will be implemented
-        // eslint-disable-next-line
         onChangeAutoSaveInterval(interval: number): void {
-
+            dispatch(changeAutoSaveInterval(interval));
         },
-        // will be implemented
-        // eslint-disable-next-line
         onChangeAAMZoomMargin(margin: number): void {
-
+            dispatch(changeAAMZoomMargin(margin));
         },
-        // will be implemented
-        // eslint-disable-next-line
         onSwitchShowingInterpolatedTracks(enabled: boolean): void {
-
+            dispatch(switchShowingInterpolatedTracks(enabled));
+        },
+        onSwitchShowingObjectsTextAlways(enabled: boolean): void {
+            dispatch(switchShowingObjectsTextAlways(enabled));
+        },
+        onSwitchAutomaticBordering(enabled: boolean): void {
+            dispatch(switchAutomaticBordering(enabled));
         },
     };
 }

@@ -1,10 +1,10 @@
-import React from 'react';
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
-import {
-    Col,
-    Row,
-    Pagination,
-} from 'antd';
+import React from 'react';
+import { Row, Col } from 'antd/lib/grid';
+import Pagination from 'antd/lib/pagination';
 
 import ModelRunnerModalContainer from 'containers/model-runner-dialog/model-runner-dialog';
 import TaskItem from 'containers/tasks-page/task-item';

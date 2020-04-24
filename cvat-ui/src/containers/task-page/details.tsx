@@ -1,3 +1,7 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 import { connect } from 'react-redux';
 
@@ -22,11 +26,11 @@ interface DispatchToProps {
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
-    const { plugins } = state.plugins;
+    const { list } = state.plugins;
 
     return {
         registeredUsers: state.users.users,
-        installedGit: plugins.GIT_INTEGRATION,
+        installedGit: list.GIT_INTEGRATION,
     };
 }
 

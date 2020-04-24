@@ -1,29 +1,22 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import './styles.scss';
 import React from 'react';
-
 import { RouteComponentProps } from 'react-router';
 import { withRouter } from 'react-router-dom';
-import {
-    Layout,
-    Icon,
-    Button,
-    Menu,
-    Dropdown,
-    Modal,
-    Row,
-    Col,
-} from 'antd';
-
+import { Row, Col } from 'antd/lib/grid';
+import Layout from 'antd/lib/layout';
+import Icon from 'antd/lib/icon';
+import Button from 'antd/lib/button';
+import Menu from 'antd/lib/menu';
+import Dropdown from 'antd/lib/dropdown';
+import Modal from 'antd/lib/modal';
 import Text from 'antd/lib/typography/Text';
 
-import getCore from 'cvat-core';
-import {
-    CVATLogo,
-    AccountIcon,
-} from 'icons';
-
-const core = getCore();
-const serverHost = core.config.backendAPI.slice(0, -7);
+import { CVATLogo, AccountIcon } from 'icons';
+import consts from 'consts';
 
 interface HeaderContainerProps {
     onLogout: () => void;
@@ -32,8 +25,15 @@ interface HeaderContainerProps {
     installedAutoAnnotation: boolean;
     installedTFAnnotation: boolean;
     installedTFSegmentation: boolean;
+    serverHost: string;
     username: string;
-    about: any;
+    toolName: string;
+    serverVersion: string;
+    serverDescription: string;
+    coreVersion: string;
+    canvasVersion: string;
+    uiVersion: string;
+    switchSettingsShortcut: string;
 }
 
 type Props = HeaderContainerProps & RouteComponentProps;
@@ -45,59 +45,91 @@ function HeaderContainer(props: Props): JSX.Element {
         installedTFAnnotation,
         installedAnalytics,
         username,
-        about,
+        toolName,
+        serverHost,
+        serverVersion,
+        serverDescription,
+        coreVersion,
+        canvasVersion,
+        uiVersion,
         onLogout,
         logoutFetching,
+        switchSettingsShortcut,
     } = props;
 
     const renderModels = installedAutoAnnotation
         || installedTFAnnotation
         || installedTFSegmentation;
 
-    function aboutModal() {
+    const {
+        CHANGELOG_URL,
+        LICENSE_URL,
+        GITTER_URL,
+        FORUM_URL,
+        GITHUB_URL,
+    } = consts;
+
+    function aboutModal(): void {
         Modal.info({
-            title: `${about.name}`,
+            title: `${toolName}`,
             content: (
                 <div>
                     <p>
-                        {`${about.description}`}
+                        {`${serverDescription}`}
                     </p>
                     <p>
                         <Text strong>
                             Server version:
                         </Text>
                         <Text type='secondary'>
-                            {` ${about.version}`}
+                            {` ${serverVersion}`}
                         </Text>
                     </p>
                     <p>
                         <Text strong>
-                            Client version:
+                            Core version:
                         </Text>
                         <Text type='secondary'>
-                            {` ${core.client.version}`}
+                            {` ${coreVersion}`}
+                        </Text>
+                    </p>
+                    <p>
+                        <Text strong>
+                            Canvas version:
+                        </Text>
+                        <Text type='secondary'>
+                            {` ${canvasVersion}`}
+                        </Text>
+                    </p>
+                    <p>
+                        <Text strong>
+                            UI version:
+                        </Text>
+                        <Text type='secondary'>
+                            {` ${uiVersion}`}
                         </Text>
                     </p>
                     <Row type='flex' justify='space-around'>
-                        <Col><a href='https://github.com/opencv/cvat/blob/develop/CHANGELOG.md' target='_blank' rel='noopener noreferrer' >What's new?</a></Col>
-                        <Col><a href='https://github.com/opencv/cvat/blob/develop/LICENSE' target='_blank' rel='noopener noreferrer' >License</a></Col>
-                        <Col><a href='https://gitter.im/opencv-cvat' target='_blank' rel='noopener noreferrer' >Need help?</a></Col>
-                        <Col><a href='https://software.intel.com/en-us/forums/intel-distribution-of-openvino-toolkit' target='_blank' rel='noopener noreferrer' >Forum on Intel Developer Zone</a></Col>
-                    </Row>  
+                        <Col><a href={CHANGELOG_URL} target='_blank' rel='noopener noreferrer'>{'What\'s new?'}</a></Col>
+                        <Col><a href={LICENSE_URL} target='_blank' rel='noopener noreferrer'>License</a></Col>
+                        <Col><a href={GITTER_URL} target='_blank' rel='noopener noreferrer'>Need help?</a></Col>
+                        <Col><a href={FORUM_URL} target='_blank' rel='noopener noreferrer'>Forum on Intel Developer Zone</a></Col>
+                    </Row>
                 </div>
             ),
-            width : 800,
+            width: 800,
             okButtonProps: {
                 style: {
                     width: '100px',
                 },
             },
-        })
+        });
     }
 
     const menu = (
         <Menu className='cvat-header-menu' mode='vertical'>
             <Menu.Item
+                title={`Press ${switchSettingsShortcut} to switch`}
                 onClick={
                     (): void => props.history.push('/settings')
                 }
@@ -147,8 +179,7 @@ function HeaderContainer(props: Props): JSX.Element {
                         >
                             Models
                         </Button>
-                    )
-                }
+                    )}
                 { installedAnalytics
                     && (
                         <Button
@@ -164,8 +195,7 @@ function HeaderContainer(props: Props): JSX.Element {
                         >
                             Analytics
                         </Button>
-                    )
-                }
+                    )}
             </div>
             <div className='cvat-right-header'>
                 <Button
@@ -173,7 +203,9 @@ function HeaderContainer(props: Props): JSX.Element {
                     type='link'
                     onClick={
                         (): void => {
-                            window.open('https://github.com/opencv/cvat', '_blank');
+                            // false positive
+                            // eslint-disable-next-line security/detect-non-literal-fs-filename
+                            window.open(GITHUB_URL, '_blank');
                         }
                     }
                 >

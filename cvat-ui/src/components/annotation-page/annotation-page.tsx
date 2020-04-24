@@ -1,29 +1,52 @@
+// Copyright (C) 2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
+
 import './styles.scss';
-import React from 'react';
+import React, { useEffect } from 'react';
+import Layout from 'antd/lib/layout';
+import Spin from 'antd/lib/spin';
+import Result from 'antd/lib/result';
 
-import {
-    Layout,
-    Spin,
-    Result,
-} from 'antd';
-
+import { Workspace } from 'reducers/interfaces';
 import AnnotationTopBarContainer from 'containers/annotation-page/top-bar/top-bar';
-import StandardWorkspaceContainer from 'containers/annotation-page/standard-workspace/standard-workspace';
+import StatisticsModalContainer from 'containers/annotation-page/top-bar/statistics-modal';
+import StandardWorkspaceComponent from './standard-workspace/standard-workspace';
+import AttributeAnnotationWorkspace from './attribute-annotation-workspace/attribute-annotation-workspace';
 
 interface Props {
-    jobInstance: any | null | undefined;
+    job: any | null | undefined;
     fetching: boolean;
     getJob(): void;
+    saveLogs(): void;
+    workspace: Workspace;
 }
 
 export default function AnnotationPageComponent(props: Props): JSX.Element {
     const {
-        jobInstance,
+        job,
         fetching,
         getJob,
+        saveLogs,
+        workspace,
     } = props;
 
-    if (jobInstance === null) {
+    useEffect(() => {
+        saveLogs();
+        const root = window.document.getElementById('root');
+        if (root) {
+            root.style.minHeight = '768px';
+        }
+
+        return () => {
+            saveLogs();
+            if (root) {
+                root.style.minHeight = '';
+            }
+        };
+    }, []);
+
+    if (job === null) {
         if (!fetching) {
             getJob();
         }
@@ -31,7 +54,7 @@ export default function AnnotationPageComponent(props: Props): JSX.Element {
         return <Spin size='large' className='cvat-spinner' />;
     }
 
-    if (typeof (jobInstance) === 'undefined') {
+    if (typeof (job) === 'undefined') {
         return (
             <Result
                 className='cvat-not-found'
@@ -44,8 +67,19 @@ export default function AnnotationPageComponent(props: Props): JSX.Element {
 
     return (
         <Layout className='cvat-annotation-page'>
-            <AnnotationTopBarContainer />
-            <StandardWorkspaceContainer />
+            <Layout.Header className='cvat-annotation-header'>
+                <AnnotationTopBarContainer />
+            </Layout.Header>
+            { workspace === Workspace.STANDARD ? (
+                <Layout.Content>
+                    <StandardWorkspaceComponent />
+                </Layout.Content>
+            ) : (
+                <Layout.Content>
+                    <AttributeAnnotationWorkspace />
+                </Layout.Content>
+            )}
+            <StatisticsModalContainer />
         </Layout>
     );
 }
